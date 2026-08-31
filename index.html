@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#667eea">
+<link rel="manifest" href="manifest.json">
+<title>✊ YES Tracker</title>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}body{margin:0;min-height:100vh;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#222}
+.app{max-width:720px;margin:auto}.card{background:#fff;border-radius:22px;padding:22px;box-shadow:0 10px 30px #0002;margin-bottom:16px;text-align:center}
+h1{margin:0 0 6px}.sub{color:#777}.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}
+button{border:0;border-radius:13px;padding:14px;font-weight:700;font-size:16px;cursor:pointer}.yes{background:#22c55e;color:#fff}.no{background:#ef4444;color:#fff}.quick .yes{font-size:18px}.quick .no{font-size:18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#f5f5f5;border-radius:12px;padding:12px}.stat b{display:block;font-size:23px}.status{min-height:20px;color:#666;font-size:13px}
+.day{background:#fff;border-radius:15px;padding:13px;margin:9px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 4px 12px #0001}.today{outline:2px solid #667eea}.date{text-align:left}.date b{display:block}.date small{color:#777}.saved{font-size:12px;color:#777;margin-top:4px}.buttons{display:flex;gap:7px}.buttons button{padding:10px 13px;font-size:14px}.selected{box-shadow:0 0 0 3px #222}
+.install{background:#222;color:#fff;width:100%;margin-top:14px}
+@media(max-width:500px){.day{flex-direction:column;align-items:stretch}.date{text-align:left}.buttons button{flex:1}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="card">
+<h1>✊ YES Tracker</h1>
+<div class="sub" id="month"></div>
+<div class="quick">
+<button class="yes" onclick="todayAnswer('YES')">✊ YES Today</button>
+<button class="no" onclick="todayAnswer('NO')">❌ NO Today</button>
+</div>
+<div class="status" id="status"></div>
+<div class="stats">
+<div class="stat"><b id="yesCount">0</b>YES</div>
+<div class="stat"><b id="noCount">0</b>NO</div>
+<div class="stat"><b id="doneCount">0</b>Done</div>
+</div>
+<button class="install" id="installBtn" hidden>📲 Install ✊ on Home Screen</button>
+</div>
+<div id="tracker"></div>
+</div>
+<script>
+const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function info(){let n=new Date();return{n,y:n.getFullYear(),m:n.getMonth(),days:new Date(n.getFullYear(),n.getMonth()+1,0).getDate()}}
+function key(y,m){return`yesTracker-${y}-${m}`}
+function data(){let x=info();return JSON.parse(localStorage.getItem(key(x.y,x.m))||"{}")}
+function time(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+function answer(day,a){let x=info(),d=data(),t=time();d[day]={answer:a,time:t,date:new Date().toLocaleDateString()};localStorage.setItem(key(x.y,x.m),JSON.stringify(d));render();document.getElementById("status").textContent=`${a} saved for today at ${t} ✓`}
+function todayAnswer(a){answer(info().n.getDate(),a)}
+function render(){let x=info(),d=data();document.getElementById("month").textContent=`${months[x.m]} ${x.y} • ${x.days} Days`;let box=document.getElementById("tracker");box.innerHTML="";let y=0,no=0,done=0;
+for(let day=1;day<=x.days;day++){let s=d[day];if(s){done++;s.answer==="YES"?y++:no++}let dt=new Date(x.y,x.m,day),name=dt.toLocaleDateString("en-US",{weekday:"short"}),row=document.createElement("div");row.className="day"+(day===x.n.getDate()?" today":"");row.innerHTML=`<div class="date"><b>${name}, ${day}</b><small>${months[x.m]}${day===x.n.getDate()?" • Today":""}</small>${s?`<div class="saved">Saved: ${s.time}</div>`:""}</div><div class="buttons"><button class="yes ${s?.answer==="YES"?"selected":""}" onclick="answer(${day},'YES')">✅ YES</button><button class="no ${s?.answer==="NO"?"selected":""}" onclick="answer(${day},'NO')">❌ NO</button></div>`;box.appendChild(row)}
+document.getElementById("yesCount").textContent=y;document.getElementById("noCount").textContent=no;document.getElementById("doneCount").textContent=done}
+render();setInterval(render,60000);
+
+let deferredPrompt;const ib=document.getElementById("installBtn");
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;ib.hidden=false});
+ib.onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;ib.hidden=true}};
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
+</script>
+</body>
+</html>
